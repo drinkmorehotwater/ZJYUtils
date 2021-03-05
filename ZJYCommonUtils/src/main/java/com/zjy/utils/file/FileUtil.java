@@ -42,6 +42,19 @@ public class FileUtil
     }
 
     /**
+     * 从指定路径加载文件
+     * @param filePath 指定的文件路径
+     * @return byte[] 字节流
+     * @throws IOException IO异常
+     */
+    public static InputStream loadFile2InputStream(String filePath) throws IOException {
+        Path path=Paths.get(filePath);
+        byte[] bytes=Files.readAllBytes(path);
+        InputStream fis=new ByteArrayInputStream(bytes);
+        return fis;
+    }
+
+    /**
      * 从指定位置复制文件到另外的指定位置
      * @param sourceFilePathStr 原文件位置
      * @param destFilePathStr 目标文件位置

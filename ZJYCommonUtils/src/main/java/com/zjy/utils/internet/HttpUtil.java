@@ -147,7 +147,7 @@ public class HttpUtil
      * @throws IOException
      */
     public static String doGet(String queryUrl, Map<String, String> params) throws IOException {
-        return doRequest(queryUrl, params, "GET");
+        return doRequest(queryUrl, params, HttpMethod.GET);
     }
 
     /**
@@ -158,6 +158,7 @@ public class HttpUtil
      * @throws IOException
      */
     public static String doPost(String queryUrl, Map<String, String> params) throws IOException {
-        return doRequest(queryUrl, params, "POST");
+        return doRequest(queryUrl, params, HttpMethod.POST);
     }
+
 }
