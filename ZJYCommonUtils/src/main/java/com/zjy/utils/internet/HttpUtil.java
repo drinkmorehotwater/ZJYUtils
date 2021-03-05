@@ -1,164 +1,331 @@
 package com.zjy.utils.internet;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
 
 /**
- * Http工具类
- *
  * @author SuperCarryZJY 
- * @ClassName: HttpUtil
- * @Description: Http工具类
- * @date 2021/3/3 15:26
+ * @ClassName:
+ * @Description:
+ * @date 2021/3/5 16:59
  */
 public class HttpUtil
 {
-    private static final Logger logger = LoggerFactory.getLogger(HttpUtil.class);
-
-    private static String doRequest(String queryUrl, Map<String, String> params, String method) throws IOException {
-        HttpURLConnection conn = null;
-        String result = null;
-
-        try {
-            String[] queryInfos = parseQueryParams(queryUrl, params);
-            URL url = new URL(queryInfos[0]);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("Content-Type", "");
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-type", "application/x-www-form-urlencoded;charset=UTF-8");
-            conn.setRequestMethod(method);
-            DataOutputStream out = new DataOutputStream(conn.getOutputStream());
-            out.writeBytes(queryInfos[1]);
-            out.flush();
-            out.close();
-            if (conn.getResponseCode() != 200) {
-                logger.warn("respCode:" + conn.getResponseCode() + ", queryUrl:" + queryInfos[0] + ", queryParams:"
-                        + queryInfos[1]);
-                InputStream is = conn.getErrorStream();
-                byte[] bs = new byte[is.available()];
-                is.read(bs);
-                throw new RuntimeException("Internal Error: " + new String(bs));
-            }
-
-            InputStream is = conn.getInputStream();
-            int length = conn.getContentLength();
-            byte[] buff;
-            if ("gzip".equals(conn.getHeaderField("Content-Encoding"))) {
-                if (length < 0) {
-                    is = new GZIPInputStream((InputStream) is);
-                }
-                else {
-                    buff = new byte[length];
-                    (new DataInputStream((InputStream) is)).readFully(buff);
-                    is = new GZIPInputStream(new ByteArrayInputStream(buff));
-                    length = -1;
-                }
-            }
-
-            if (length < 0) {
-                Reader reader = new InputStreamReader((InputStream) is, "UTF-8");
-                char[] cbuf = new char[1024];
-                StringBuffer sb = new StringBuffer(1024);
-
-                while (true) {
-                    int count = reader.read(cbuf, 0, 1024);
-                    if (count == -1) {
-                        result = sb.toString();
-                        break;
-                    }
-
-                    sb.append(cbuf, 0, count);
-                }
-            }
-            else {
-                buff = new byte[length];
-                (new DataInputStream((InputStream) is)).readFully(buff);
-                result = new String(buff, "UTF-8");
-            }
-        }
-        finally {
-            if (conn != null) {
-                try {
-                    conn.disconnect();
-                }
-                catch (Exception var19) {
-                }
-                conn = null;
-            }
-
-        }
-
-        return result;
-    }
-
-    private static String[] parseQueryParams(String queryUrl, Map<String, String> params)
-            throws UnsupportedEncodingException {
-        StringBuffer buff = new StringBuffer();
-        int paramIndex = queryUrl.indexOf("?");
-        if (paramIndex > 0) {
-            String paramsStr = queryUrl.substring(paramIndex + 1, queryUrl.length());
-            queryUrl = queryUrl.substring(0, paramIndex);
-            String[] paramArray = paramsStr.split("&");
-
-            for (int i = 0; i < paramArray.length; ++i) {
-                String[] pair = paramArray[i].split("=", 2);
-                if (pair.length == 2 && !"".equals(pair[0].trim())) {
-                    buff.append(pair[0]);
-                    buff.append("=");
-                    buff.append(URLEncoder.encode(pair[1], "UTF-8"));
-                    buff.append("&");
-                }
-            }
-        }
-
-        if (params != null && !params.isEmpty()) {
-            Iterator i$ = params.keySet().iterator();
-
-            while (i$.hasNext()) {
-                String key = (String) i$.next();
-                buff.append(key);
-                buff.append("=");
-                buff.append(URLEncoder.encode((String) params.get(key), "UTF-8"));
-                buff.append("&");
-            }
-        }
-
-        if (buff.length() > 0) {
-            buff = buff.deleteCharAt(buff.length() - 1);
-        }
-
-        return new String[] { queryUrl, buff.toString() };
-    }
-
     /**
-     * get 方式发起http请求
-     * @param queryUrl 请求url
-     * @param params 参数
-     * @return String
+     * Send a get request
+     * @param url
+     * @return response
      * @throws IOException
      */
-    public static String doGet(String queryUrl, Map<String, String> params) throws IOException {
-        return doRequest(queryUrl, params, HttpMethod.GET);
+    static public String get(String url) throws IOException {
+        return get(url, null);
     }
 
     /**
-     * post 方式发起http请求
-     * @param queryUrl
-     * @param params
+     * Send a get request
+     * @param url         Url as string
+     * @param headers     Optional map with headers
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String get(String url,
+            Map<String, String> headers) throws IOException {
+        return fetch("GET", url, null, headers);
+    }
+
+    /**
+     * Send a post request
+     * @param url         Url as string
+     * @param body        Request body as string
+     * @param headers     Optional map with headers
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String post(String url, String body,
+            Map<String, String> headers) throws IOException {
+        return fetch("POST", url, body, headers);
+    }
+
+    /**
+     * Send a post request
+     * @param url         Url as string
+     * @param body        Request body as string
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String post(String url, String body) throws IOException {
+        return post(url, body, null);
+    }
+
+    /**
+     * Post a json string
+     * @param url         Url as string
+     * @param jsonStr     a json string
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String postJson(String url, String jsonStr) throws IOException {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Content-Type", "application/json;charset=UTF-8");
+        return post(url, jsonStr, headers);
+    }
+
+    /**
+     * Post a form with parameters
+     * @param url         Url as string
+     * @param params      map with parameters/values
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String postForm(String url, Map<String, String> params)
+            throws IOException {
+        return postForm(url, params, null);
+    }
+
+    /**
+     * Post a form with parameters
+     * @param url         Url as string
+     * @param params      Map with parameters/values
+     * @param headers     Optional map with headers
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String postForm(String url, Map<String, String> params,
+            Map<String, String> headers) throws IOException {
+        // set content type
+        if (headers == null) {
+            headers = new HashMap<String, String>();
+        }
+        headers.put("Content-Type", "application/x-www-form-urlencoded");
+
+        // parse parameters
+        String body = "";
+        if (params != null) {
+            boolean first = true;
+            for (String param : params.keySet()) {
+                if (first) {
+                    first = false;
+                }
+                else {
+                    body += "&";
+                }
+                String value = params.get(param);
+                body += URLEncoder.encode(param, "UTF-8") + "=";
+                body += URLEncoder.encode(value, "UTF-8");
+            }
+        }
+
+        return post(url, body, headers);
+    }
+
+    /**
+     * Send a put request
+     * @param url         Url as string
+     * @param body        Request body as string
+     * @param headers     Optional map with headers
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String put(String url, String body,
+            Map<String, String> headers) throws IOException {
+        return fetch("PUT", url, body, headers);
+    }
+
+    /**
+     * Send a put request
+     * @param url         Url as string
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String put(String url, String body) throws IOException {
+        return put(url, body, null);
+    }
+
+    /**
+     * Send a delete request
+     * @param url         Url as string
+     * @param headers     Optional map with headers
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String delete(String url,
+            Map<String, String> headers) throws IOException {
+        return fetch("DELETE", url, null, headers);
+    }
+
+    /**
+     * Send a delete request
+     * @param url         Url as string
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String delete(String url) throws IOException {
+        return delete(url, null);
+    }
+
+    /**
+     * Append query parameters to given url
+     * @param url         Url as string
+     * @param params      Map with query parameters
+     * @return url        Url with query parameters appended
+     * @throws IOException
+     */
+    static public String appendQueryParams(String url,
+            Map<String, String> params) throws IOException {
+        String fullUrl = url;
+        if (params != null) {
+            boolean first = (fullUrl.indexOf('?') == -1);
+            for (String param : params.keySet()) {
+                if (first) {
+                    fullUrl += '?';
+                    first = false;
+                }
+                else {
+                    fullUrl += '&';
+                }
+                String value = params.get(param);
+                fullUrl += URLEncoder.encode(param, "UTF-8") + '=';
+                fullUrl += URLEncoder.encode(value, "UTF-8");
+            }
+        }
+
+        return fullUrl;
+    }
+
+    /**
+     * Retrieve the query parameters from given url
+     * @param url         Url containing query parameters
+     * @return params     Map with query parameters
+     * @throws IOException
+     */
+    static public Map<String, String> getQueryParams(String url)
+            throws IOException {
+        Map<String, String> params = new HashMap<String, String>();
+
+        int start = url.indexOf('?');
+        while (start != -1) {
+            // read parameter name
+            int equals = url.indexOf('=', start);
+            String param = "";
+            if (equals != -1) {
+                param = url.substring(start + 1, equals);
+            }
+            else {
+                param = url.substring(start + 1);
+            }
+
+            // read parameter value
+            String value = "";
+            if (equals != -1) {
+                start = url.indexOf('&', equals);
+                if (start != -1) {
+                    value = url.substring(equals + 1, start);
+                }
+                else {
+                    value = url.substring(equals + 1);
+                }
+            }
+
+            params.put(URLDecoder.decode(param, "UTF-8"),
+                    URLDecoder.decode(value, "UTF-8"));
+        }
+
+        return params;
+    }
+
+    /**
+     * Returns the url without query parameters
+     * @param url         Url containing query parameters
+     * @return url        Url without query parameters
+     * @throws IOException
+     */
+    static public String removeQueryParams(String url)
+            throws IOException {
+        int q = url.indexOf('?');
+        if (q != -1) {
+            return url.substring(0, q);
+        }
+        else {
+            return url;
+        }
+    }
+
+    /**
+     * Send a request
+     * @param method      HTTP method, for example "GET" or "POST"
+     * @param url         Url as string
+     * @param body        Request body as string
+     * @param headers     Optional map with headers
+     * @return response   Response as string
+     * @throws IOException
+     */
+    static public String fetch(String method, String url, String body,
+            Map<String, String> headers) throws IOException {
+        // connection
+        URL u = new URL(url);
+        HttpURLConnection conn = (HttpURLConnection)u.openConnection();
+        conn.setConnectTimeout(120000);
+        conn.setReadTimeout(120000);
+
+        // method
+        if (method != null) {
+            conn.setRequestMethod(method);
+        }
+
+        // headers
+        if (headers != null) {
+            for(String key : headers.keySet()) {
+                conn.addRequestProperty(key, headers.get(key));
+            }
+        }
+
+        // body
+        if (body != null) {
+            conn.setDoOutput(true);
+            OutputStream os = conn.getOutputStream();
+            os.write(body.getBytes());
+            os.flush();
+            os.close();
+        }
+
+        // response
+        InputStream is = conn.getInputStream();
+        String response = streamToString(is);
+
+        // handle redirects
+        if (conn.getResponseCode() == 301) {
+            String location = conn.getHeaderField("Location");
+            return fetch(method, location, body, headers);
+        }
+
+        return response;
+    }
+
+    /**
+     * Read an input stream from conn into a string
+     * @param in
      * @return
      * @throws IOException
      */
-    public static String doPost(String queryUrl, Map<String, String> params) throws IOException {
-        return doRequest(queryUrl, params, HttpMethod.POST);
-    }
+    static public String streamToString(InputStream in) throws IOException {
+        InputStreamReader isr = new InputStreamReader(in, "UTF-8");
+        BufferedReader br = new BufferedReader(isr);
 
+        String data;
+        StringBuilder out = new StringBuilder();
+        while ((data = br.readLine()) != null) {
+            out.append(data);
+        }
+        br.close();
+        return out.toString();
+    }
 }
