@@ -39,7 +39,7 @@ public class HttpUtil
      */
     static public String get(String url,
             Map<String, String> headers) throws IOException {
-        return fetch("GET", url, null, headers);
+        return fetch(HttpMethod.GET, url, null, headers);
     }
 
     /**
@@ -52,7 +52,7 @@ public class HttpUtil
      */
     static public String post(String url, String body,
             Map<String, String> headers) throws IOException {
-        return fetch("POST", url, body, headers);
+        return fetch(HttpMethod.POST, url, body, headers);
     }
 
     /**
