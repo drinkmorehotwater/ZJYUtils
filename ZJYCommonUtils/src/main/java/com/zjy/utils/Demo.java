@@ -1,6 +1,7 @@
 package com.zjy.utils;
 
 import com.zjy.utils.internet.HttpUtil;
+import com.zjy.utils.other.BiliBiliCacheFileUtil;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -14,7 +15,7 @@ import java.util.Map;
  */
 public class Demo
 {
-    public static void main(String[] args) {
+    public static void main1(String[] args) {
 //        Map<String, String> params=new HashMap<>();
 //        for(int i=0;i<99999;i++){
 //            try {
@@ -93,5 +94,12 @@ public class Demo
         catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void main(String[] args) throws IOException {
+        // b站缓存视频文件夹下面的指定缓存视频文件夹
+        String folderPath="E:\\b站缓存\\74933720";
+        String destFolderPath="E:\\CeShi2\\";
+        BiliBiliCacheFileUtil.editFile(folderPath,destFolderPath);
     }
 }
