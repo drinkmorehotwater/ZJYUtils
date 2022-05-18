@@ -95,4 +95,20 @@ public class FileUtil
 //        System.out.println("getTotalSpace"+file.getTotalSpace());
 //        System.out.println("getUsableSpace"+file.getUsableSpace());
     }
+
+    /**
+     * 保存文件到指定路径，如果没有该文件夹则创建
+     * @param bytes 文件字节流
+     * @param filePath 保存路径
+     * @throws IOException IO异常
+     */
+    public static void saveAndMkDir(byte[] bytes,String filePath) throws IOException {
+        Path path=Paths.get(filePath);
+        //如果父文件夹不存在，则创建
+        Path parentPath=path.getParent();
+        if(Files.notExists(parentPath)){
+            Files.createDirectory(parentPath);
+        };
+        Files.write(path,bytes);
+    }
 }

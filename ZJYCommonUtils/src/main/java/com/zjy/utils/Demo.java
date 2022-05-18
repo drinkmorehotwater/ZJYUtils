@@ -98,8 +98,8 @@ public class Demo
 
     public static void main(String[] args) throws IOException {
         // b站缓存视频文件夹下面的指定缓存视频文件夹
-        String folderPath="E:\\b站缓存\\74933720";
-        String destFolderPath="E:\\CeShi2\\";
+        String folderPath="E:\\b站缓存\\838132893";
+        String destFolderPath="E:\\计算机教程\\Docker";
         BiliBiliCacheFileUtil.editFile(folderPath,destFolderPath);
     }
 }

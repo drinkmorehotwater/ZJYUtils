@@ -28,7 +28,7 @@ public class BiliBiliCacheFileUtil
         //删除开头三个字节
         System.arraycopy(bytes,3,destBytes,0,destBytes.length);
         //将文件命名并写到指定位置
-        FileUtil.saveFile(destBytes,destFilePath);
+        FileUtil.saveAndMkDir(destBytes,destFilePath);
     }
 
     /**
@@ -62,7 +62,7 @@ public class BiliBiliCacheFileUtil
     }
 
     /**
-     * 修改指定路径下的B站缓存视频文件并保存到目的文件夹
+     * 破解指定路径下的B站缓存视频文件并保存到目的文件夹
      * @param originFolderPath 指定路径
      * @param destFolderPath 目的地址
      */
@@ -74,7 +74,7 @@ public class BiliBiliCacheFileUtil
         for(File folder:folders){
             // 依次修改这些文件并将修改后的文件写到指定地址
             File file=getOneSubFileMP4(folder.getPath());
-            editBiliBiliCacheMp4File(file.getAbsolutePath(),destFolderPath+folder.getName()+fileNameSuffix);
+            editBiliBiliCacheMp4File(file.getAbsolutePath(),destFolderPath+"\\"+folder.getName()+fileNameSuffix);
         }
     }
 }
